@@ -14,6 +14,7 @@
 #include "MapCoordinates.h"
 #include "ZobristHashing.h"
 #include "GameState.h"
+#include <chrono>
 
 
 class Game {
@@ -56,7 +57,7 @@ public:
 	}
 
 
-	bool findLine(int startY, int startX, std::pair<int, int> shiftVec, std::unordered_map<std::string, bool>& visited, bool removeSequence)
+	bool findLine(int startY, int startX, std::pair<int, int> shiftVec, bool removeSequence)
 	{
 		int currY = startY;
 		int currX = startX;
@@ -81,19 +82,6 @@ public:
 				whitePawnsCounter = 0;
 				startY = currY + shiftVec.first;
 				startX = currX + shiftVec.second;
-			}
-
-			std::string indexWithVector;
-			indexWithVector += std::to_string(currY);
-			indexWithVector += std::to_string(currX);
-			indexWithVector += std::to_string(shiftVec.first);
-			indexWithVector += std::to_string(shiftVec.second);
-
-			if (!visited[indexWithVector]) {
-				visited[indexWithVector] = true;
-			}
-			else {
-				return false;
 			}
 
 			if (whitePawnsCounter == m_triggering || blackPawnsCounter == m_triggering) {
@@ -164,20 +152,11 @@ public:
 		int count = 0;
 
 		if (m_gameState.board.whiteOnBoard >= m_triggering || m_gameState.board.blackOnBoard >= m_triggering) {
-
-			std::unordered_map<std::string, bool> visited;
-
-			for (int mapY = 1; mapY < m_gameState.board.arr.size() - 1; mapY++) {
-				for (int mapX = 0; mapX < m_gameState.board.arr[mapY].size(); mapX++) {
-					if (m_gameState.board.arr[mapY][mapX] == SPACE_BETWEN_FIELD || m_gameState.board.arr[mapY][mapX] == START_CHAR) continue;
-					else {
-						std::vector<Point> nearPoints = m_gameState.board.generatePointsNear(mapY, mapX);
-						for (Point& nearPoint : nearPoints) {
-							std::pair<int, int> shiftVec = { nearPoint.y - mapY, nearPoint.x - mapX };
-							if (findLine(mapY, mapX, shiftVec, visited, removeSequence)) {
-								count++;
-							}
-						}
+			for (Point& startPoint : m_coordinates.startPoints) {
+				int arr[][3] = { {0, 2}, {1, 1}, {1, -1} };
+				for (int i = 0; i < 3; i++) {
+					if (findLine(startPoint.y + arr[i][0], startPoint.x + arr[i][1], { arr[i][0], arr[i][1] }, removeSequence)) {
+						count++;
 					}
 				}
 			}
@@ -202,7 +181,7 @@ public:
 		return { 0,0 };
 	}
 
-	
+
 	void findSequences(bool removeSequence)
 	{
 		m_linesToRemove.clear();
@@ -212,8 +191,16 @@ public:
 				int arr[][3] = { {0, -2}, {-1, -1}, {-1, 1} };
 				for (int i = 0; i < 3; i++) {
 					Point startPoint = goToStartOfLine(p, arr[i]);
-					std::pair<int, int> shiftVec = { -arr[i][0], -arr[i][1]};
-					findLine(startPoint.y, startPoint.x, shiftVec, visited, removeSequence);
+					std::string pointVector;
+					pointVector += startPoint.y;
+					pointVector += startPoint.x;
+					pointVector += arr[i][0];
+					pointVector += arr[i][1];
+					bool& isVisited = visited[pointVector];
+					if (!isVisited) {
+						findLine(startPoint.y, startPoint.x, { -arr[i][0], -arr[i][1] }, removeSequence);
+						isVisited = true;
+					}
 				}
 			}
 		}
@@ -244,6 +231,7 @@ public:
 			return false;
 		}
 
+		m_coordinates = m_gameState.board.loadCoordinates();
 		int c = checkForSequencesInStartMap(false); //sequence in start map
 		if (c == 1) {
 			std::cout << "ERROR_FOUND_" << c << "_ROW_OF_LENGTH_K" << std::endl << std::endl;
@@ -279,7 +267,6 @@ public:
 
 		if (m_gameState.board.loadMap()) {
 			if (checkForMapCorrectness()) {
-				m_coordinates = m_gameState.board.loadCoordinates();
 				zobristHashing.initializeZobristTable(m_gameState.board);
 				zobristHashing.computeZobristHash(m_gameState.board);
 			}
@@ -432,7 +419,7 @@ public:
 		}
 	}
 
-	
+
 	void proccessPlayerMove(move move) {
 		if (m_gameState.gameStatus == inProgress || m_gameState.gameStatus == badMove) {
 			doPlayerMove(move);
@@ -442,7 +429,7 @@ public:
 		}
 	}
 
-	
+
 	bool doPlayerMove(const move& move)
 	{
 		Point pointFrom = m_coordinates.m_coordinates[move.from];
@@ -993,4 +980,5 @@ public:
 	Coordinates m_coordinates;
 	std::vector<Point> m_pointsThatChangedState;
 	ZobristHashing zobristHashing;
+	std::chrono::duration<double> m_time;
 };

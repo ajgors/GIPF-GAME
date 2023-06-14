@@ -85,7 +85,7 @@ public:
 				solver.winningSequenceExists(n);
 			}
 			else if (utils::contains(input, "SOLVE_GAME_STATE")) {
-				solver.solveGame(10000);
+				solver.solveGame(20);
 			}
 			else if (input == "IS_GAME_OVER") {
 				game.printGameEndInfo();
@@ -97,4 +97,4 @@ public:
 			}
 		}
 	}
-};
+};s

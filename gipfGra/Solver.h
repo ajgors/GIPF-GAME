@@ -24,6 +24,7 @@ public:
 			bestScore = minimax(gameState, playerToCheck, maxDepth, 0, false, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), transpositionTable);
 			if (bestScore == std::numeric_limits<double>::max()) {
 				std::cout << "EXIST" << std::endl;
+				game.m_gameState = std::move(info);
 				return true;
 			}
 		}
@@ -34,8 +35,8 @@ public:
 
 
 	double evaluateExist(pawn playerTocheck, const gameState& currentGameState) {
-		double wr = 0.75;
-		double br = 0.75;
+		double wr = 1.2;
+		double br = 1.2;
 		double wb = 0.85;
 		double bb = 0.85;
 		double wc = 1;
@@ -94,9 +95,9 @@ public:
 				return std::numeric_limits<double>::max();
 			}
 			wr *= -currentGameState.whiteReserve;
-			br *= +currentGameState.blackReserve;
+			br *= currentGameState.blackReserve;
 			wb *= -currentGameState.board.whiteOnBoard;
-			bb *= +currentGameState.board.blackOnBoard;
+			bb *= currentGameState.board.blackOnBoard;
 			wc *= currentGameState.whiteRemoved;
 			bc *= -currentGameState.blackRemoved;
 			return wr + br + wb + bb + wc + bc;
@@ -188,11 +189,11 @@ public:
 				gameState info = game.m_gameState;
 				std::unordered_map<gameState, double> transpositionTable(1000);
 
-				//auto startTime = std::chrono::high_resolution_clock::now();
+				auto startTime = std::chrono::high_resolution_clock::now();
 
 				std::vector<gameState> sortedGameStates;
 				std::move(gameStates.begin(), gameStates.end(), std::back_inserter(sortedGameStates));
-				sortByNumberOfReserve(sortedGameStates);
+				//sortByNumberOfReserve(sortedGameStates);
 
 				for (const gameState& gameState : sortedGameStates) {
 					double score = minimax(gameState, playerToCheck, maxDepth, 0, false, std::numeric_limits<double>::lowest(), std::numeric_limits<double>::max(), transpositionTable);
@@ -235,6 +236,7 @@ public:
 
 			gameState info = game.m_gameState;
 			std::unordered_map<gameState, double> transpositionTable(1000);
+			auto startTime = std::chrono::high_resolution_clock::now();
 
 			std::vector<gameState> sortedGameStates;
 			std::move(gameStates.begin(), gameStates.end(), std::back_inserter(sortedGameStates));
@@ -250,14 +252,22 @@ public:
 				if (score > bestScore) {
 					bestScore = score;
 					bestMove = currentMove;
-					std::cout << bestScore << std::endl;
+					//std::cout << bestScore << std::endl;
 					if (bestScore == std::numeric_limits<double>::max()) {
 						break;
 					}
 				}
 			}
-			std::cout << currentMove.from << "-" << currentMove.to << std::endl;
+			if (bestMove.from == "" && bestMove.to == "") {
+				std::cout << "NO BEST MOVE YOU LOSSE" << std::endl;
+			}
+			else {
+				std::cout << bestMove.from << "-" << bestMove.to << std::endl;
+			}
 			game.m_gameState = std::move(info);
+			/*		auto endTime = std::chrono::high_resolution_clock::now();
+					auto duration = std::chrono::duration_cast<std::chrono::duration<double>>(endTime - startTime);
+					std::cout << "Execution time: " << duration.count() << " s" << std::endl;*/
 		}
 	}
 
